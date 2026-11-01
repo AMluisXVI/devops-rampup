@@ -1,0 +1,32 @@
+# Runs on the back-end host: it is the only one the RDS security group lets in.
+- name: Install the MySQL client
+  ansible.builtin.dnf:
+    name: mariadb1011
+    state: present
+
+- name: Create tables (idempotent, CREATE TABLE IF NOT EXISTS)
+  ansible.builtin.shell: mysql -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" < /opt/movie-analyst-api/schema.sql
+  environment: &db_env
+    DB_HOST: "{{ db_host }}"
+    DB_USER: "{{ db_user }}"
+    DB_PASS: "{{ db_password }}"
+    DB_NAME: "{{ db_name }}"
+    MYSQL_PWD: "{{ db_password }}"
+  changed_when: false
+  no_log: true
+
+- name: Count existing movies
+  ansible.builtin.command: mysql -h "{{ db_host }}" -u "{{ db_user }}" -N -B -e "SELECT COUNT(*) FROM movies" {{ db_name }}
+  environment: *db_env
+  register: movie_count
+  changed_when: false
+  no_log: true
+
+# seeds.js only INSERTs, so run it once (empty table) to keep the play idempotent.
+- name: Load seed data
+  ansible.builtin.command:
+    cmd: node seeds.js
+    chdir: /opt/movie-analyst-api
+  environment: *db_env
+  when: movie_count.stdout | int == 0
+  no_log: true

@@ -1,0 +1,19 @@
+[Unit]
+Description={{ app_name }}
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User={{ app_user }}
+WorkingDirectory={{ app_dir }}
+EnvironmentFile=/etc/{{ app_name }}.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+# To a file so the CloudWatch agent can ship it (journald stays the default for everything else)
+StandardOutput=append:/var/log/{{ app_name }}.log
+StandardError=append:/var/log/{{ app_name }}.log
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

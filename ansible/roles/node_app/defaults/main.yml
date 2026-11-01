@@ -1,0 +1,5 @@
+# Reusable role for both Node apps: copies the code, installs deps, runs it under systemd.
+app_name: ""
+app_env: {}
+app_user: nodeapp
+app_dir: "/opt/{{ app_name }}"

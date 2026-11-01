@@ -1,7 +1,7 @@
 // Get our dependencies
 const express = require('express')
 const app = express()
-const mysql = require('mysql')
+const mysql = require('mysql2')
 const util = require('util')
 
 const pool = mysql.createPool({

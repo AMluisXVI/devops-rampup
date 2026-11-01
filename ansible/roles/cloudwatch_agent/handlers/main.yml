@@ -1,0 +1,5 @@
+- name: Load CloudWatch agent config
+  ansible.builtin.command: >-
+    /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl
+    -a fetch-config -m ec2 -s -c file:{{ cw_config_path }}
+  changed_when: true

@@ -1,0 +1,4 @@
+# Apps whose log file (/var/log/<app>.log) is shipped to <log_group_prefix>/<app>.
+cw_log_apps: []
+# Outside the agent dir: fetch-config deletes the json it loads from there (breaks idempotency).
+cw_config_path: /etc/amazon-cloudwatch-agent.json
