@@ -145,7 +145,7 @@ terraform -chdir=terraform workspace select qa && terraform -chdir=terraform des
 - **Dashboard** `epam-final-task-<ambiente>` (salida `dashboard_url`): alarmas, CPU, memoria, disco, peticiones/5xx, targets sanos y latencia de los ALB, RDS y últimos logs.
 - **Alarmas** (10 por ambiente, aviso de alarma y de recuperación por email): CPU y memoria de front y back, status check de la NAT, hosts no sanos en ALB público e interno, 5xx del ALB público, CPU y almacenamiento libre de RDS.
 - **Logs**: `/epam-final-task-<ambiente>/movie-analyst-api` y `.../movie-analyst-ui` (7 días).
-- Tras un despliegue nuevo, las alarmas de hosts no sanos pasan a ALARM hasta que Ansible termina y vuelven solas a OK.
+- Tras un despliegue nuevo llegan emails de ALARM que vuelven solos a OK cuando Ansible termina: hosts no sanos (la app aún no está instalada) y memoria (el agente aún no publica, y la falta de datos cuenta como alarma a propósito). Si se destruye el ambiente justo después, el OK no alcanza a llegar.
 - Probar una notificación: `aws cloudwatch set-alarm-state --alarm-name epam-final-task-prod-back-cpu-high --state-value ALARM --state-reason "prueba"`.
 
 ## Cambios a la aplicación
