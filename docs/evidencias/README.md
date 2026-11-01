@@ -24,5 +24,8 @@ No son capturas de la consola web.
 | 11 | [11-cw-alarms.png](11-cw-alarms.png) | Las 10 alarmas en OK, todas con acción SNS. |
 | 12 | [12-alb-targets.png](12-alb-targets.png) | ALB público (internet-facing) e interno; ambos targets *healthy*. |
 | 13 | [13-resources.png](13-resources.png) | EC2 (front/back sin IP pública), RDS (no pública, cifrada, Single-AZ) y las 7 subnets en 2 AZ. |
+| 14 | [14-sns-subscription-confirmed.png](14-sns-subscription-confirmed.png) | Suscripción email al tópico SNS de alertas confirmada. |
+| 15 | [15-alarm-email-alarm.png](15-alarm-email-alarm.png) | Email recibido: alarma `prod-back-cpu-high` en ALARM (forzada con `set-alarm-state` a las 20:41:11 UTC). |
+| 16 | [16-alarm-email-ok.png](16-alarm-email-ok.png) | Email de recuperación 19 s después: CloudWatch reevaluó la CPU real (~0.87 %) y volvió a OK. |
 
-**Pendiente:** la captura del email de una alarma de prueba. Requiere confirmar antes la suscripción SNS en el correo de alertas.
+Las capturas 14–16 son del usuario; en los emails se taparon la dirección de correo y se recortó el enlace de baja (permite desuscribir a cualquiera que lo tenga).
