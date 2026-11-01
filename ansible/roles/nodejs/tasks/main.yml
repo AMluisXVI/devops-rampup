@@ -1,0 +1,7 @@
+# Node.js 22 LTS from the Amazon Linux 2023 repos (default "nodejs" is 18, already EOL).
+- name: Install Node.js 22 and npm
+  ansible.builtin.dnf:
+    name:
+      - nodejs22
+      - nodejs22-npm
+    state: present

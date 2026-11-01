@@ -1,0 +1,58 @@
+# Runs on the bastion (requirement: the bastion runs all Ansible, including its own config).
+# Usage from your machine: ansible/run.sh qa|prod
+
+- name: Bastion configures itself
+  hosts: bastion
+  become: true
+  roles:
+    - common
+    - cloudwatch_agent
+
+- name: Back-end (API) and database bootstrap
+  hosts: backend
+  become: true
+  pre_tasks:
+    - name: Read the DB password from SSM Parameter Store (bastion IAM role)
+      ansible.builtin.command: >-
+        aws ssm get-parameter --region {{ aws_region }} --name {{ db_password_param }}
+        --with-decryption --query Parameter.Value --output text
+      delegate_to: localhost
+      become: false
+      run_once: true
+      changed_when: false
+      no_log: true
+      register: db_password_cmd
+  vars:
+    db_password: "{{ db_password_cmd.stdout }}"
+  roles:
+    - common
+    - nodejs
+    - role: node_app
+      vars:
+        app_name: movie-analyst-api
+        app_env:
+          PORT: "3000"
+          DB_HOST: "{{ db_host }}"
+          DB_USER: "{{ db_user }}"
+          DB_PASS: "{{ db_password }}"
+          DB_NAME: "{{ db_name }}"
+    - db_init
+    - role: cloudwatch_agent
+      vars:
+        cw_log_apps: [movie-analyst-api]
+
+- name: Front-end (UI)
+  hosts: frontend
+  become: true
+  roles:
+    - common
+    - nodejs
+    - role: node_app
+      vars:
+        app_name: movie-analyst-ui
+        app_env:
+          PORT: "3030"
+          BACKEND_URL: "{{ backend_url }}"
+    - role: cloudwatch_agent
+      vars:
+        cw_log_apps: [movie-analyst-ui]

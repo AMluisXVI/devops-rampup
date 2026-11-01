@@ -1,0 +1,23 @@
+# Memory and disk metrics + app logs to CloudWatch (EC2 alone only reports CPU/network/disk I/O).
+# Permissions come from the instance role (CloudWatchAgentServerPolicy, set by Terraform).
+- name: Install the CloudWatch agent
+  ansible.builtin.dnf:
+    name: amazon-cloudwatch-agent
+    state: present
+
+- name: Write the agent configuration
+  ansible.builtin.template:
+    src: amazon-cloudwatch-agent.json.j2
+    dest: "{{ cw_config_path }}"
+    mode: "0644"
+    validate: python3 -m json.tool %s
+  notify: Load CloudWatch agent config
+
+- name: Apply the configuration now if it changed
+  ansible.builtin.meta: flush_handlers
+
+- name: Keep the agent enabled and running
+  ansible.builtin.systemd_service:
+    name: amazon-cloudwatch-agent
+    enabled: true
+    state: started
