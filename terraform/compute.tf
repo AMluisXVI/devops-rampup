@@ -2,6 +2,8 @@
 # Public module for EC2. Amazon Linux 2023 (module default SSM AMI), t3.micro (free tier).
 # Only the bastion has user_data (installs Ansible + rsync to receive the playbooks); everything else is configured by Ansible from it.
 
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_policy" "read_params" {
   name        = "${local.name}-read-params"
   description = "Read this environment's SSM parameters (DB password) for Ansible"
@@ -10,13 +12,15 @@ resource "aws_iam_policy" "read_params" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
-      Resource = "arn:aws:ssm:${var.region}:*:parameter/${var.project}/${local.env}/*"
+      Resource = "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/${var.project}/${local.env}/*"
     }]
   })
 }
 
 locals {
   cw_agent_policy = { cloudwatch = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy" }
+  # Account-level EBS encryption is off, so ask for it per instance (AWS-managed key, free).
+  encrypted_root = { encrypted = true }
 }
 
 module "bastion" {
@@ -31,6 +35,7 @@ module "bastion" {
   associate_public_ip_address = true
   create_security_group       = false
   ignore_ami_changes          = true
+  root_block_device           = local.encrypted_root
 
   create_iam_instance_profile = true
   iam_role_name               = "${local.name}-bastion"
@@ -56,6 +61,7 @@ module "front" {
   vpc_security_group_ids = [aws_security_group.front.id]
   create_security_group  = false
   ignore_ami_changes     = true
+  root_block_device      = local.encrypted_root
 
   create_iam_instance_profile = true
   iam_role_name               = "${local.name}-front"
@@ -73,6 +79,7 @@ module "back" {
   vpc_security_group_ids = [aws_security_group.back.id]
   create_security_group  = false
   ignore_ami_changes     = true
+  root_block_device      = local.encrypted_root
 
   create_iam_instance_profile = true
   iam_role_name               = "${local.name}-back"

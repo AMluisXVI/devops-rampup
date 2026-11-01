@@ -18,6 +18,7 @@ resource "aws_security_group" "this" {
   }
 
   egress {
+    description = "Forward NATed traffic to the internet"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -37,6 +38,10 @@ resource "aws_instance" "this" {
 
   metadata_options {
     http_tokens = "required" # IMDSv2 only
+  }
+
+  root_block_device {
+    encrypted = true
   }
 
   # Routing bootstrap stays in user_data: private hosts need this NAT before Ansible can reach them.

@@ -4,7 +4,7 @@ Migración de la app **Movie Analyst** (front-end Node, back-end API Node, MySQL
 
 - Diagrama y flujo: [docs/architecture.md](docs/architecture.md)
 - Cada cambio y su porqué, en orden: [REGISTRO-CAMBIOS.md](REGISTRO-CAMBIOS.md)
-- Plan de ejecución original: [docs/plan-ejecucion.md](docs/plan-ejecucion.md) · Enunciado del ramp-up: [docs/README-rampup-original.md](docs/README-rampup-original.md)
+- Enunciado del ramp-up original: [docs/README-rampup-original.md](docs/README-rampup-original.md)
 
 ## Resumen de la arquitectura
 
@@ -48,7 +48,7 @@ Una VPC por ambiente (`qa` 10.0.0.0/16, `prod` 10.1.0.0/16) en 2 zonas de dispon
 - **Contraseña de la DB**: generada como valor efímero y enviada como argumento *write-only* a RDS y a SSM Parameter Store (SecureString) → **no queda en el state de Terraform** ni en el repo; Ansible la lee en el bastion con su rol IAM y `no_log`.
 - **Llave SSH**: key pair importado (la privada nunca sale de tu equipo ni entra al state); Ansible usa agent forwarding, la llave no se copia al bastion.
 - **IAM mínimo**: front/back solo pueden publicar métricas/logs; el bastion además lee `/<proyecto>/<ambiente>/*` de SSM.
-- IMDSv2 obligatorio en la NAT; RDS y estado S3 cifrados; acceso público al bucket bloqueado; parches de seguridad aplicados por Ansible (rol `common`).
+- IMDSv2 obligatorio en todas las instancias; discos EBS, RDS y estado S3 cifrados; acceso público al bucket bloqueado; parches de seguridad aplicados por Ansible (rol `common`).
 
 ### Fiabilidad
 - 2 AZ para ALB y subnet group de RDS; health checks del ALB y reinicio automático por systemd.
