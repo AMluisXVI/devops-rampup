@@ -22,8 +22,7 @@ jobs:
         working-directory: terraform
         run: |
           terraform init -backend=false -input=false
-          terraform workspace new qa # the default workspace fails on purpose (locals.tf)
-          terraform validate
+          TF_WORKSPACE=qa terraform validate # the default workspace fails on purpose (locals.tf)
       - name: Validate the global stack
         working-directory: terraform/global
         run: |
