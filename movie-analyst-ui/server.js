@@ -25,6 +25,8 @@ app.get('/movies', function(req, res){
   request
     .get(`http://${backend_url}/movies`)
     .end(function(err, data) {
+      // No response at all (timeout, DNS): data is undefined and reading it would crash the process.
+      if(!data) return res.status(502).send('Backend unavailable');
       if(data.status == 403){
         res.send(403, '403 Forbidden');
       } else {
@@ -41,6 +43,7 @@ app.get('/authors', function(req, res){
     .get(`http://${backend_url}/reviewers`)
     .set('Authorization', 'Bearer ' + req.access_token)
     .end(function(err, data) {
+      if(!data) return res.status(502).send('Backend unavailable');
       if(data.status == 403){
         res.send(403, '403 Forbidden');
       } else {
@@ -54,22 +57,12 @@ app.get('/publications', function(req, res){
   request
     .get(`http://${backend_url}/publications`)
     .end(function(err, data) {
+      if(!data) return res.status(502).send('Backend unavailable');
       if(data.status == 403){
         res.send(403, '403 Forbidden');
       } else {
         var publications = data.body;
         res.render('publications', {publications : publications});
-      }
-    })
-})
-
-// We’ve added the pending route, but calling this route from the MovieAnalyst Website will always result in a 403 Forbidden error as this client does not have the admin scope required to get the data.
-app.get('/pending', function(req, res){
-  request
-    .get(`http://${backend_url}/pending`)
-    .end(function(err, data) {
-      if(data.status == 403){
-        res.send(403, '403 Forbidden');
       }
     })
 })

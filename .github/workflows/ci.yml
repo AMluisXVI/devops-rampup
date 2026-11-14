@@ -22,7 +22,9 @@ jobs:
         working-directory: terraform
         run: |
           terraform init -backend=false -input=false
-          TF_WORKSPACE=qa terraform validate # the default workspace fails on purpose (locals.tf)
+          # Every environment, because each one reads its own entry of the settings map (locals.tf);
+          # the default workspace fails on purpose.
+          for ws in qa prod; do TF_WORKSPACE=$ws terraform validate; done
       - name: Validate the global stack
         working-directory: terraform/global
         run: |
@@ -37,8 +39,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install checkov ansible-lint
-      # soft-fail: reports findings without blocking; the accepted ones are listed in REGISTRO-CAMBIOS.md
-      - run: checkov -d terraform --quiet --compact --soft-fail
+      # Accepted findings are listed, with the reason, in .checkov.yaml; anything else fails
+      - run: checkov -d terraform --quiet --compact --framework terraform --config-file .checkov.yaml
       - run: ansible-lint ansible
       - run: shellcheck ansible/run.sh
 
@@ -57,3 +59,8 @@ jobs:
           npm ci --omit=dev
           npm audit --omit=dev
           node --check server.js
+      - if: matrix.app == 'movie-analyst-api'
+        working-directory: ${{ matrix.app }}
+        run: |
+          npm ci
+          npm test

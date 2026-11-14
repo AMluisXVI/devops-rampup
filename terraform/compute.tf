@@ -11,7 +11,7 @@ resource "aws_iam_policy" "read_params" {
     Version = "2012-10-17"
     Statement = [{
       Effect   = "Allow"
-      Action   = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath"]
+      Action   = "ssm:GetParameter"
       Resource = "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/${var.project}/${local.env}/*"
     }]
   })

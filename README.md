@@ -337,15 +337,16 @@ justo de lo que deben avisar.
 | SSH restringido | Al bastion solo desde una IP `/32`; a front y back solo desde el bastion |
 | Contraseña de la DB | Fuera del estado de Terraform, del repo y de los logs; cifrada en SSM |
 | Llave SSH | Importada como key pair; la privada no sale del equipo del administrador |
-| IAM mínimo | Front y back solo publican métricas y logs; el bastion además lee los parámetros de su ambiente |
+| IAM mínimo | Front y back solo publican métricas y logs; el bastion además puede leer (solo `GetParameter`) los parámetros de su ambiente |
 | IMDSv2 obligatorio | En todas las instancias |
 | Cifrado | Discos EBS, RDS, parámetro SSM y bucket del estado |
 | Parches | El rol `common` aplica las actualizaciones de seguridad |
 | Dependencias | `npm audit` sin vulnerabilidades en las dos apps |
 
 Antes de entregar se revisó el repositorio con detect-secrets, checkov, ansible-lint, shellcheck y
-`npm audit`. No hay secretos en los archivos ni en el historial de git. Los hallazgos corregidos y
-los que se aceptaron a propósito, con su razón, están en [REGISTRO-CAMBIOS.md](REGISTRO-CAMBIOS.md).
+`npm audit`. No hay secretos en los archivos ni en el historial de git. Los hallazgos corregidos
+están en [REGISTRO-CAMBIOS.md](REGISTRO-CAMBIOS.md); los que se aceptaron a propósito, cada uno con
+su razón, en [.checkov.yaml](.checkov.yaml). Cualquier aviso nuevo hace fallar el CI.
 
 ## Costos: cómo se mantuvo en free tier
 
@@ -392,7 +393,7 @@ paso comprueba algo distinto, y no se avanza si el anterior falla.
 
 | Puerta | Qué detecta | Qué pasa si falla |
 |---|---|---|
-| CI en GitHub Actions | Terraform mal formateado o inválido, problemas en Ansible o en el script, dependencias vulnerables | El commit queda marcado en rojo |
+| CI en GitHub Actions | Terraform mal formateado o inválido en `qa` o en `prod`, un aviso de seguridad nuevo de checkov, problemas en Ansible o en el script, dependencias vulnerables, tests de la API rotos | El commit queda marcado en rojo |
 | Validación de `admin_cidr` | Abrir el SSH del bastion a un rango en vez de a una sola IP | `terraform plan` no continúa |
 | Workspace `default` | Aplicar sin haber elegido ambiente | `terraform plan` falla |
 | Bloqueo del estado | Dos personas aplicando a la vez | La segunda no arranca |
@@ -470,9 +471,10 @@ El objetivo era migrar la app, no reescribirla. Solo se tocó lo necesario:
 | Dos dependencias quitadas de la API | No se usaban y traían 10 vulnerabilidades conocidas |
 | `ejs` actualizado en el front | La versión original tenía una vulnerabilidad crítica |
 | `package-lock.json` en las dos apps | Para que cada despliegue instale exactamente las mismas versiones |
-
-Queda sin corregir un bug del código original que no afecta a la interfaz: el SQL mal concatenado
-de `/pending`.
+| El front responde 502 si no logra conectar con el back | Antes, un fallo de conexión tumbaba el proceso entero, incluida la página de inicio |
+| Ruta `/pending` eliminada de las dos apps | Nunca funcionó: el SQL estaba mal escrito en la API y el front dejaba la petición colgada. Ninguna página la usaba |
+| `INSERT IGNORE` en los datos iniciales | Una carga interrumpida a medias ya no bloquea los despliegues siguientes |
+| Test de la API para el fallo de base de datos | Comprueba que responde 500 y sigue viva; corre en el CI |
 
 ## Límites y mejoras
 
