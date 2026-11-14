@@ -12,7 +12,7 @@ async function main () {
     })
     pool.query = util.promisify(pool.query)
 
-    const publicationsQuery = 'INSERT IGNORE INTO publications (name, avatar) VALUES ?'
+    const publicationsQuery = 'INSERT INTO publications (name, avatar) VALUES ? ON DUPLICATE KEY UPDATE name = name'
     const publicationsValues = [
       ['The Daily Reviewer', 'glyphicon-eye-open'],
       ['International Movie Critic', 'glyphicon-fire'],
@@ -24,7 +24,7 @@ async function main () {
     ]
     await pool.query(publicationsQuery, [publicationsValues])
 
-    const reviewersQuery = 'INSERT IGNORE INTO reviewers (name, publication, avatar) VALUES ?'
+    const reviewersQuery = 'INSERT INTO reviewers (name, publication, avatar) VALUES ? ON DUPLICATE KEY UPDATE name = name'
     const reviewersValues = [
       ['Robert Smith', 'The Daily Reviewer', 'https://s3.amazonaws.com/uifaces/faces/twitter/angelcolberg/128.jpg'],
       ['Chris Harris', 'International Movie Critic', 'https://s3.amazonaws.com/uifaces/faces/twitter/bungiwan/128.jpg'],
@@ -36,7 +36,7 @@ async function main () {
     ]
     await pool.query(reviewersQuery, [reviewersValues])
 
-    const moviesQuery = 'INSERT IGNORE INTO movies (title, release_year, score, reviewer, publication) VALUES ?'
+    const moviesQuery = 'INSERT INTO movies (title, release_year, score, reviewer, publication) VALUES ? ON DUPLICATE KEY UPDATE title = title'
     const moviesValues = [
       ['Suicide Squad', '2016', 8, 'Robert Smith', 'The Daily Reviewer'],
       ['Batman vs. Superman', '2016', 6, 'Chris Harris', 'International Movie Critic'],

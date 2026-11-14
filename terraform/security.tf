@@ -58,6 +58,7 @@ resource "aws_vpc_security_group_ingress_rule" "back_app" {
 }
 
 resource "aws_vpc_security_group_ingress_rule" "ssh_from_bastion" {
+  #checkov:skip=CKV_AWS_24:Source is the bastion security group, not 0.0.0.0/0 (false positive)
   for_each = { front = aws_security_group.front.id, back = aws_security_group.back.id }
 
   security_group_id            = each.value

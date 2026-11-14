@@ -38,7 +38,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install checkov ansible-lint
+      # Pinned: checkov blocks the build, so a new release must not turn it red by itself
+      - run: pip install checkov==3.4.5 ansible-lint==26.11.0
       # Accepted findings are listed, with the reason, in .checkov.yaml; anything else fails
       - run: checkov -d terraform --quiet --compact --framework terraform --config-file .checkov.yaml
       - run: ansible-lint ansible
@@ -59,8 +60,30 @@ jobs:
           npm ci --omit=dev
           npm audit --omit=dev
           node --check server.js
+      - if: matrix.app == 'movie-analyst-ui'
+        name: The UI survives an unreachable back-end
+        working-directory: ${{ matrix.app }}
+        run: |
+          BACKEND_URL=127.0.0.1:9 PORT=3030 node server.js &
+          sleep 2
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:3030/movies)" = 502
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:3030/)" = 200
       - if: matrix.app == 'movie-analyst-api'
         working-directory: ${{ matrix.app }}
         run: |
           npm ci
           npm test
+      - if: matrix.app == 'movie-analyst-api'
+        name: Schema and seeds load twice on a real MySQL
+        working-directory: ${{ matrix.app }}
+        env:
+          DB_HOST: 127.0.0.1
+          DB_USER: root
+          DB_PASS: root
+        run: |
+          sudo systemctl start mysql # preinstalled on the runner, root/root
+          mysql -uroot -proot -e 'CREATE DATABASE movie_db'
+          mysql -uroot -proot movie_db < schema.sql
+          node seeds.js
+          node seeds.js # a second load must not fail or duplicate rows
+          test "$(mysql -uroot -proot -N -B -e 'SELECT COUNT(*) FROM movie_db.movies')" = 10

@@ -1,4 +1,6 @@
 # Accepted findings. Anything not listed here fails the CI.
+# Rules that must keep guarding the rest of the code (open SSH, public IPs) are skipped
+# inline, on the one resource that needs it, with #checkov:skip.
 skip-check:
   # Cost: a customer-managed KMS key is US$1/month (free tier only)
   - CKV_AWS_158 # log groups use the AWS-managed encryption
@@ -6,7 +8,6 @@ skip-check:
   - CKV_AWS_26 # SNS topic only carries alarm names and states
   - CKV_AWS_126 # detailed EC2 monitoring is billed per metric
   # Design: the NAT instance and the bastion must be reachable from / reach the internet
-  - CKV_AWS_88 # the NAT instance needs a public IP to do its job
   - CKV_AWS_382 # the NAT instance forwards any outbound traffic
   - CKV_AWS_130 # the management subnet only hosts the bastion, which needs a public IP
   - CKV2_AWS_41 # the NAT instance calls no AWS API, so it gets no IAM role
@@ -14,7 +15,5 @@ skip-check:
   - CKV_AWS_394 # the first two available zones are taken on purpose
   # Public modules are pinned by version (~>), not by commit hash
   - CKV_TF_1
-  # False positives: the rule references the bastion security group, not 0.0.0.0/0
-  - CKV_AWS_24
   # False positive: the groups are attached through the EC2 and RDS modules
   - CKV2_AWS_5

@@ -29,6 +29,7 @@ resource "aws_security_group" "this" {
 }
 
 resource "aws_instance" "this" {
+  #checkov:skip=CKV_AWS_88:A NAT instance needs a public IP to reach the internet
   ami                         = data.aws_ssm_parameter.al2023.value
   instance_type               = var.instance_type
   subnet_id                   = var.subnet_id
