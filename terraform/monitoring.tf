@@ -28,5 +28,6 @@ module "monitoring" {
     }
   }
 
-  log_apps = ["movie-analyst-api", "movie-analyst-ui"]
+  log_apps           = ["movie-analyst-api", "movie-analyst-ui"]
+  log_retention_days = local.cfg.log_retention_days
 }

@@ -29,4 +29,5 @@
     chdir: /opt/movie-analyst-api
   environment: *db_env
   when: movie_count.stdout | int == 0
+  changed_when: true # only runs when the table is empty, so it always inserts
   no_log: true

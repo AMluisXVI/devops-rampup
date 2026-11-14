@@ -12,7 +12,7 @@
   hosts: backend
   become: true
   pre_tasks:
-    - name: Read the DB password from SSM Parameter Store (bastion IAM role)
+    - name: Read the DB password from SSM Parameter Store (bastion IAM role) # noqa: run-once[task]
       ansible.builtin.command: >-
         aws ssm get-parameter --region {{ aws_region }} --name {{ db_password_param }}
         --with-decryption --query Parameter.Value --output text
@@ -40,6 +40,14 @@
     - role: cloudwatch_agent
       vars:
         cw_log_apps: [movie-analyst-api]
+  post_tasks:
+    - name: Smoke test - the API answers
+      ansible.builtin.uri:
+        url: http://localhost:3000/
+      register: api_check
+      until: api_check.status == 200
+      retries: 10
+      delay: 3
 
 - name: Front-end (UI)
   hosts: frontend
@@ -56,3 +64,14 @@
     - role: cloudwatch_agent
       vars:
         cw_log_apps: [movie-analyst-ui]
+  post_tasks:
+    # Full chain: front -> internal ALB -> back -> RDS. Retries cover the ALB health checks
+    # (the target needs ~2.5 min of passing checks on a fresh deploy).
+    - name: Smoke test - the UI shows movies from the database
+      ansible.builtin.uri:
+        url: http://localhost:3030/movies
+        return_content: true
+      register: ui_check
+      until: ui_check.status == 200 and 'panel-title' in ui_check.content # one panel per movie row
+      retries: 30
+      delay: 10

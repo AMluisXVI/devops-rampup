@@ -39,7 +39,11 @@ Una VPC por ambiente (`qa` 10.0.0.0/16, `prod` 10.1.0.0/16) en 2 zonas de dispon
 - **Todo como código**: red, cómputo, DB, monitoreo e inventario de Ansible salen de Terraform; la configuración de servidores sale de Ansible. Un ambiente nuevo = `apply` + `run.sh`.
 - **Inventario generado por Terraform** (`terraform/ansible.tf`): IPs y endpoints reales, nunca desactualizados.
 - **Ansible idempotente**: la segunda ejecución da `changed=0`; esquema con `CREATE TABLE IF NOT EXISTS` y seeds solo si la tabla está vacía.
-- **systemd** para las apps (reinicio automático; `npm start` del repo usa sintaxis de Windows).
+- **Prueba de humo al final de Ansible**: comprueba que la API responde y que el front muestra películas pasando por el ALB interno y RDS; si no, el despliegue falla.
+- **Despliegues reproducibles**: `package-lock.json` en las dos apps y versión fija de `ansible-core` en el bastion.
+- **CI en GitHub Actions** (`.github/workflows/ci.yml`): `terraform fmt/validate`, checkov, ansible-lint, shellcheck y `npm audit` en cada push. No usa credenciales de AWS.
+- **Ajustes por ambiente** en un solo mapa (`terraform/locals.tf`): tamaños de instancia, backups, protección de borrado y retención de logs (qa 7 días, prod 30).
+- **systemd** para las apps (reinicio automático; `npm start` del repo usa sintaxis de Windows); sus logs rotan a diario con `logrotate` (7 copias).
 - **Registro de cambios** con el porqué de cada decisión.
 
 ### Seguridad
@@ -65,7 +69,7 @@ Una VPC por ambiente (`qa` 10.0.0.0/16, `prod` 10.1.0.0/16) en 2 zonas de dispon
 - RDS **Single-AZ**, 20 GB gp2 sin autoescalado, sin Performance Insights.
 - **Destroy al terminar cada sesión**; qa y prod no se levantan a la vez.
 - **AWS Budget** de US$10/mes sin descontar créditos (alerta real de consumo) y tags `Project/Environment/Owner/ManagedBy` en todo.
-- Logs con retención de 7 días.
+- Logs con retención de 7 días en qa y 30 en prod.
 
 ### Sostenibilidad
 - Recursos mínimos y apagados cuando no se usan; instancias de generación actual.
@@ -109,7 +113,8 @@ SNS, SSM, S3 (estado), CloudWatch (10 alarmas, 1 dashboard, 6 métricas custom, 
 ├── ansible/
 │   ├── site.yml  ansible.cfg  run.sh
 │   └── roles/ common  nodejs  node_app  db_init  cloudwatch_agent
-├── docs/                     # diagrama, plan, enunciado original
+├── .github/workflows/ci.yml  # comprobaciones estáticas en cada push
+├── docs/                     # diagrama, evidencias, enunciado original
 └── REGISTRO-CAMBIOS.md
 ```
 
@@ -144,7 +149,7 @@ terraform -chdir=terraform workspace select qa && terraform -chdir=terraform des
 
 - **Dashboard** `epam-final-task-<ambiente>` (salida `dashboard_url`): alarmas, CPU, memoria, disco, peticiones/5xx, targets sanos y latencia de los ALB, RDS y últimos logs.
 - **Alarmas** (10 por ambiente, aviso de alarma y de recuperación por email): CPU y memoria de front y back, status check de la NAT, hosts no sanos en ALB público e interno, 5xx del ALB público, CPU y almacenamiento libre de RDS.
-- **Logs**: `/epam-final-task-<ambiente>/movie-analyst-api` y `.../movie-analyst-ui` (7 días).
+- **Logs**: `/epam-final-task-<ambiente>/movie-analyst-api` y `.../movie-analyst-ui` (7 días en qa, 30 en prod).
 - Tras un despliegue nuevo llegan emails de ALARM que vuelven solos a OK cuando Ansible termina: hosts no sanos (la app aún no está instalada) y memoria (el agente aún no publica, y la falta de datos cuenta como alarma a propósito). Si se destruye el ambiente justo después, el OK no alcanza a llegar.
 - Probar una notificación: `aws cloudwatch set-alarm-state --alarm-name epam-final-task-prod-back-cpu-high --state-value ALARM --state-reason "prueba"`.
 
@@ -152,7 +157,9 @@ terraform -chdir=terraform workspace select qa && terraform -chdir=terraform des
 
 - `movie-analyst-api`: `mysql` → `mysql2` (el paquete viejo no soporta `caching_sha2_password`, el método por defecto de MySQL 8.4). Solo cambia el `require`.
 - `movie-analyst-api/schema.sql`: no existía; usa `release_year` (lo que usan `seeds.js` y `/movies`) en lugar de `release` del diagrama.
-- Bugs del código original que **no** se corrigieron (no afectan la UI): `res.staus` en los `catch` (una petición con error de DB se queda colgada), y el SQL mal concatenado de `/pending`. Por eso el health check del back usa `/` y no `/movies`.
+- `movie-analyst-api/server.js`: corregido el typo `res.staus` → `res.status` en los 4 `catch`. Con Node 22, ese error dentro del `catch` tumbaba el proceso entero ante cualquier fallo de la DB; ahora responde 500 y sigue vivo.
+- Quitadas dos dependencias sin uso y vulnerables del API y actualizado `ejs` en el front (`npm audit` = 0).
+- Bug del código original que **no** se corrigió (no afecta la UI): el SQL mal concatenado de `/pending`. El health check del back usa `/` y no `/movies` para no depender de la DB.
 
 ## Evidencias
 

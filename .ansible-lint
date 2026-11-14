@@ -1,0 +1,3 @@
+# Role variables keep short names (app_name, cw_log_apps); renaming them adds nothing here.
+skip_list:
+  - var-naming[no-role-prefix]

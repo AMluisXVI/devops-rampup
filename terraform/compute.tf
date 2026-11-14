@@ -28,7 +28,7 @@ module "bastion" {
   version = "~> 6.4"
 
   name                        = "${local.name}-bastion"
-  instance_type               = "t3.micro"
+  instance_type               = local.cfg.instance_type
   key_name                    = var.key_name
   subnet_id                   = aws_subnet.management.id
   vpc_security_group_ids      = [aws_security_group.bastion.id]
@@ -46,7 +46,7 @@ module "bastion" {
     #!/bin/bash
     set -e
     dnf install -y git rsync python3-pip
-    pip3 install ansible-core
+    pip3 install ansible-core==2.15.13 # pinned: newest line that supports the Python 3.9 of AL2023
   EOT
 }
 
@@ -55,7 +55,7 @@ module "front" {
   version = "~> 6.4"
 
   name                   = "${local.name}-front"
-  instance_type          = "t3.micro"
+  instance_type          = local.cfg.instance_type
   key_name               = var.key_name
   subnet_id              = module.vpc.private_subnets[0]
   vpc_security_group_ids = [aws_security_group.front.id]
@@ -73,7 +73,7 @@ module "back" {
   version = "~> 6.4"
 
   name                   = "${local.name}-back"
-  instance_type          = "t3.micro"
+  instance_type          = local.cfg.instance_type
   key_name               = var.key_name
   subnet_id              = module.vpc.private_subnets[0]
   vpc_security_group_ids = [aws_security_group.back.id]

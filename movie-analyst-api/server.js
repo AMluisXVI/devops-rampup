@@ -22,7 +22,7 @@ app.get('/movies', async function (req, res) {
     res.json(rows)
   } catch (err) {
     console.error('API Error:', err)
-    res.staus(500).send({'msg': 'Internal server error'})
+    res.status(500).send({'msg': 'Internal server error'})
   }
 })
 
@@ -32,7 +32,7 @@ app.get('/reviewers', async function (req, res) {
     res.json(rows)
   } catch (err) {
     console.error('API Error:', err)
-    res.staus(500).send({'msg': 'Internal server error'})
+    res.status(500).send({'msg': 'Internal server error'})
   }
 })
 
@@ -42,7 +42,7 @@ app.get('/publications', async function (req, res) {
     res.json(rows)
   } catch (err) {
     console.error('API Error:', err)
-    res.staus(500).send({'msg': 'Internal server error'})
+    res.status(500).send({'msg': 'Internal server error'})
   }
 })
 
@@ -56,7 +56,7 @@ app.get('/pending', async function (req, res) {
     res.json(rows)
   } catch (err) {
     console.error('API Error:', err)
-    res.staus(500).send({'msg': 'Internal server error'})
+    res.status(500).send({'msg': 'Internal server error'})
   }
 })
 

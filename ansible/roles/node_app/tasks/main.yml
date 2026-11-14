@@ -40,6 +40,26 @@
     mode: "0644"
   notify: Restart app
 
+# copytruncate: systemd keeps the file open in append mode, so rotate in place.
+- name: Install logrotate
+  ansible.builtin.dnf:
+    name: logrotate
+    state: present
+
+- name: Rotate the app log
+  ansible.builtin.copy:
+    dest: "/etc/logrotate.d/{{ app_name }}"
+    mode: "0644"
+    content: |
+      /var/log/{{ app_name }}.log {
+        daily
+        rotate 7
+        compress
+        missingok
+        notifempty
+        copytruncate
+      }
+
 - name: Enable and start the service
   ansible.builtin.systemd_service:
     name: "{{ app_name }}"

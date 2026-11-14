@@ -24,7 +24,7 @@ module "db" {
   engine_version       = "8.4"
   family               = "mysql8.4"
   major_engine_version = "8.4"
-  instance_class       = "db.t4g.micro"
+  instance_class       = local.cfg.db_instance_class
 
   allocated_storage     = 20
   max_allocated_storage = 0 # no storage autoscaling beyond the free 20 GB
@@ -43,9 +43,9 @@ module "db" {
   multi_az               = false
   publicly_accessible    = false
 
-  backup_retention_period      = 1
+  backup_retention_period      = local.cfg.db_backup_retention_days
   skip_final_snapshot          = true
-  deletion_protection          = false
+  deletion_protection          = local.cfg.db_deletion_protection
   create_db_option_group       = false
   performance_insights_enabled = false
 }

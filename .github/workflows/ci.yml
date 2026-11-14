@@ -1,0 +1,60 @@
+# Static checks only: nothing here talks to AWS or needs credentials.
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.3
+      - run: terraform fmt -check -recursive terraform
+      - name: Validate the environment stack
+        working-directory: terraform
+        run: |
+          terraform init -backend=false -input=false
+          terraform workspace new qa # the default workspace fails on purpose (locals.tf)
+          terraform validate
+      - name: Validate the global stack
+        working-directory: terraform/global
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+
+  security-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install checkov ansible-lint
+      # soft-fail: reports findings without blocking; the accepted ones are listed in REGISTRO-CAMBIOS.md
+      - run: checkov -d terraform --quiet --compact --soft-fail
+      - run: ansible-lint ansible
+      - run: shellcheck ansible/run.sh
+
+  apps:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [movie-analyst-api, movie-analyst-ui]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - working-directory: ${{ matrix.app }}
+        run: |
+          npm ci --omit=dev
+          npm audit --omit=dev
+          node --check server.js
