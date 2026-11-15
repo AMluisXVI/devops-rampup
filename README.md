@@ -286,6 +286,8 @@ Tres detalles que importan:
 - **La contraseña de la base de datos** la lee Ansible desde SSM en el bastion, con su rol IAM y
   `no_log`. No aparece en el repo, en el inventario ni en los logs.
 - **Es idempotente.** La segunda ejecución termina con `changed=0`.
+- **Si la contraseña no coincide, lo dice.** Antes de tocar la base de datos, Ansible comprueba el
+  acceso y, si falla, explica la causa y cómo recuperarse (subir `db_password_version` y aplicar).
 
 Al final, Ansible hace una **prueba de humo**: comprueba que la API responde y que el front muestra
 películas pasando por el ALB interno y RDS. Si la app no funciona, el despliegue falla; no termina

@@ -19,6 +19,10 @@ resource "aws_ssm_parameter" "db_password" {
   type             = "SecureString"
   value_wo         = ephemeral.random_password.db.result
   value_wo_version = local.db_password_version
+
+  # After RDS (slow, and the step that can fail): a failed apply then leaves no stale
+  # password here, and the retry sends one new password to both.
+  depends_on = [module.db]
 }
 
 module "db" {

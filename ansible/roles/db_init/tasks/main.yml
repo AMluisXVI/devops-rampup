@@ -4,14 +4,33 @@
     name: mariadb1011
     state: present
 
-- name: Create tables (idempotent, CREATE TABLE IF NOT EXISTS)
-  ansible.builtin.shell: mysql -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" < /opt/movie-analyst-api/schema.sql
+# The tasks below hide their output (no_log) because they carry the password, so a login
+# failure would only show "censored". Check the login first and explain it.
+- name: Check that the database accepts the password stored in SSM
+  ansible.builtin.command: mysql -h "{{ db_host }}" -u "{{ db_user }}" -e "SELECT 1" {{ db_name }}
   environment: &db_env
     DB_HOST: "{{ db_host }}"
     DB_USER: "{{ db_user }}"
     DB_PASS: "{{ db_password }}"
     DB_NAME: "{{ db_name }}"
     MYSQL_PWD: "{{ db_password }}"
+  register: db_login
+  changed_when: false
+  failed_when: false
+  no_log: true
+
+- name: Stop with a clear message if the login failed
+  ansible.builtin.fail:
+    msg: >-
+      Cannot log in to the database with the password in SSM ({{ db_password_param }}).
+      mysql said: {{ db_login.stderr | trim }}.
+      If it is "Access denied", RDS and SSM hold different passwords (an apply stopped half-way):
+      bump db_password_version in terraform/database.tf, run terraform apply and run this again.
+  when: db_login.rc != 0
+
+- name: Create tables (idempotent, CREATE TABLE IF NOT EXISTS)
+  ansible.builtin.shell: mysql -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" < /opt/movie-analyst-api/schema.sql
+  environment: *db_env
   changed_when: false
   no_log: true
 
