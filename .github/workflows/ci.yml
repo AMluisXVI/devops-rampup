@@ -68,6 +68,8 @@ jobs:
           sleep 2
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:3030/movies)" = 502
           test "$(curl -s -o /dev/null -w '%{http_code}' localhost:3030/)" = 200
+          # template source must not be downloadable
+          test "$(curl -s -o /dev/null -w '%{http_code}' localhost:3030/views/index.ejs)" = 404
       - if: matrix.app == 'movie-analyst-api'
         working-directory: ${{ matrix.app }}
         run: |

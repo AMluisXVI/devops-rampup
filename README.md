@@ -284,7 +284,9 @@ Tres detalles que importan:
 - **El inventario lo genera Terraform** con las IPs y direcciones reales, así que nunca queda
   desactualizado. No contiene secretos.
 - **La contraseña de la base de datos** la lee Ansible desde SSM en el bastion, con su rol IAM y
-  `no_log`. No aparece en el repo, en el inventario ni en los logs.
+  `no_log`. No aparece en el repo, en el inventario ni en los logs. Las tareas de base de datos
+  la toman del archivo de entorno del servidor, no de variables de Ansible, para que `sudo` no
+  la anote en el registro del sistema.
 - **Es idempotente.** La segunda ejecución termina con `changed=0`.
 - **Si la contraseña no coincide, lo dice.** Antes de tocar la base de datos, Ansible comprueba el
   acceso y, si falla, explica la causa y cómo recuperarse (subir `db_password_version` y aplicar).
@@ -478,6 +480,7 @@ El objetivo era migrar la app, no reescribirla. Solo se tocó lo necesario:
 | Ruta `/pending` eliminada de las dos apps | Nunca funcionó: el SQL estaba mal escrito en la API y el front dejaba la petición colgada. Ninguna página la usaba |
 | Los datos iniciales ignoran filas duplicadas | Una carga interrumpida a medias ya no bloquea los despliegues siguientes |
 | Test de la API para el fallo de base de datos | Comprueba que responde 500 y sigue viva; corre en el CI |
+| El front ya no sirve su carpeta `public/` | Solo contenía las plantillas, y se podían descargar tal cual (`/views/index.ejs`). También se quitó la cabecera `X-Powered-By` |
 
 ## Límites y mejoras
 

@@ -1,23 +1,19 @@
 # Runs on the back-end host: it is the only one the RDS security group lets in.
+# The password is read on the host from the API's root-only env file (written by node_app).
+# Passing it through Ansible's `environment:` would put it on the sudo command line, and
+# sudo logs every command to the system journal.
 - name: Install the MySQL client
   ansible.builtin.dnf:
     name: mariadb1011
     state: present
 
-# The tasks below hide their output (no_log) because they carry the password, so a login
-# failure would only show "censored". Check the login first and explain it.
 - name: Check that the database accepts the password stored in SSM
-  ansible.builtin.command: mysql -h "{{ db_host }}" -u "{{ db_user }}" -e "SELECT 1" {{ db_name }}
-  environment: &db_env
-    DB_HOST: "{{ db_host }}"
-    DB_USER: "{{ db_user }}"
-    DB_PASS: "{{ db_password }}"
-    DB_NAME: "{{ db_name }}"
-    MYSQL_PWD: "{{ db_password }}"
+  ansible.builtin.shell: >-
+    . /etc/movie-analyst-api.env &&
+    MYSQL_PWD="$DB_PASS" mysql -h "$DB_HOST" -u "$DB_USER" -e "SELECT 1" "$DB_NAME"
   register: db_login
   changed_when: false
   failed_when: false
-  no_log: true
 
 - name: Stop with a clear message if the login failed
   ansible.builtin.fail:
@@ -29,24 +25,22 @@
   when: db_login.rc != 0
 
 - name: Create tables (idempotent, CREATE TABLE IF NOT EXISTS)
-  ansible.builtin.shell: mysql -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" < /opt/movie-analyst-api/schema.sql
-  environment: *db_env
+  ansible.builtin.shell: >-
+    . /etc/movie-analyst-api.env &&
+    MYSQL_PWD="$DB_PASS" mysql -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" < /opt/movie-analyst-api/schema.sql
   changed_when: false
-  no_log: true
 
 - name: Count existing movies
-  ansible.builtin.command: mysql -h "{{ db_host }}" -u "{{ db_user }}" -N -B -e "SELECT COUNT(*) FROM movies" {{ db_name }}
-  environment: *db_env
+  ansible.builtin.shell: >-
+    . /etc/movie-analyst-api.env &&
+    MYSQL_PWD="$DB_PASS" mysql -h "$DB_HOST" -u "$DB_USER" -N -B -e "SELECT COUNT(*) FROM movies" "$DB_NAME"
   register: movie_count
   changed_when: false
-  no_log: true
 
-# seeds.js only INSERTs, so run it once (empty table) to keep the play idempotent.
+# Run only on an empty table so the play stays idempotent (seeds.js itself tolerates duplicates).
 - name: Load seed data
-  ansible.builtin.command:
-    cmd: node seeds.js
+  ansible.builtin.shell:
+    cmd: set -a && . /etc/movie-analyst-api.env && node seeds.js
     chdir: /opt/movie-analyst-api
-  environment: *db_env
   when: movie_count.stdout | int == 0
   changed_when: true # only runs when the table is empty, so it always inserts
-  no_log: true

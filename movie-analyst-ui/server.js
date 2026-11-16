@@ -9,8 +9,9 @@ var app = express();
 app.set('view engine', 'ejs');
 app.set('views', __dirname + '/public/views/');
 
-// This tells Express out of which directory to serve static assets like CSS and images
-app.use(express.static(__dirname + '/public'));
+// No static middleware: public/ only holds the templates, and serving it made their source
+// downloadable (/views/index.ejs). CSS and fonts come from a CDN.
+app.disable('x-powered-by');
 
 let backend_url = process.env.BACKEND_URL || "localhost:3000"
 
