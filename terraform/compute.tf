@@ -45,7 +45,7 @@ module "bastion" {
   user_data                   = <<-EOT
     #!/bin/bash
     set -e
-    dnf install -y git rsync python3-pip
+    dnf install -y rsync python3-pip
     pip3 install ansible-core==2.15.13 # pinned: newest line that supports the Python 3.9 of AL2023
   EOT
 }

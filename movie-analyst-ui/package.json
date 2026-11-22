@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "ui for the movie analyst website....im totally not ripping this off.......",
   "scripts": {
-    "test": "mocha"
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",

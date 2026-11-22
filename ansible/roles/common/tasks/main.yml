@@ -4,3 +4,26 @@
     state: latest
     security: true
     update_only: true
+
+# A patched kernel, glibc or systemd only takes effect after a reboot.
+- name: Install the needs-restarting tool
+  ansible.builtin.dnf:
+    name: dnf-plugins-core
+    state: present
+
+- name: Check whether the updates need a reboot
+  ansible.builtin.command: dnf needs-restarting -r
+  register: needs_reboot
+  changed_when: false
+  failed_when: needs_reboot.rc > 1 # 1 = reboot needed, 0 = not
+
+# The bastion runs this playbook itself: rebooting it would cut the run, so it only reports.
+- name: Reboot to load the patched packages
+  ansible.builtin.reboot:
+    reboot_timeout: 600
+  when: needs_reboot.rc == 1 and ansible_connection != 'local'
+
+- name: Tell the operator the bastion needs a reboot
+  ansible.builtin.debug:
+    msg: The bastion has updates that need a reboot. Reboot it after this run (sudo reboot); nothing else depends on it.
+  when: needs_reboot.rc == 1 and ansible_connection == 'local'

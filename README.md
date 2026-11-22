@@ -273,7 +273,7 @@ Los roles:
 
 | Rol | Qué hace |
 |---|---|
-| `common` | Aplica las actualizaciones de seguridad |
+| `common` | Aplica las actualizaciones de seguridad y reinicia si alguna lo necesita |
 | `nodejs` | Instala Node.js 22 LTS (el Node por defecto de Amazon Linux 2023 es el 18, sin soporte) |
 | `node_app` | Copia el código, instala dependencias y crea el servicio systemd. **El mismo rol sirve para front y back** |
 | `db_init` | Crea las tablas y carga los datos solo si la tabla está vacía |
@@ -344,7 +344,7 @@ justo de lo que deben avisar.
 | IAM mínimo | Front y back solo publican métricas y logs; el bastion además puede leer (solo `GetParameter`) los parámetros de su ambiente |
 | IMDSv2 obligatorio | En todas las instancias |
 | Cifrado | Discos EBS, RDS, parámetro SSM y bucket del estado |
-| Parches | El rol `common` aplica las actualizaciones de seguridad |
+| Parches | El rol `common` aplica las actualizaciones de seguridad y reinicia front y back si alguna lo necesita (kernel, glibc); en el bastion solo avisa, porque Ansible corre en él |
 | Dependencias | `npm audit` sin vulnerabilidades en las dos apps |
 
 Antes de entregar se revisó el repositorio con detect-secrets, checkov, ansible-lint, shellcheck y

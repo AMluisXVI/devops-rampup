@@ -22,7 +22,7 @@
   changed_when: "'added' in npm_install.stdout or 'changed' in npm_install.stdout or 'removed' in npm_install.stdout"
   notify: Restart app
 
-# npm start uses Windows syntax (SET NODE_ENV=dev), so systemd runs node directly.
+# systemd runs node directly and restarts it if it dies.
 - name: Write the environment file (secrets, root only)
   ansible.builtin.template:
     src: app.env.j2

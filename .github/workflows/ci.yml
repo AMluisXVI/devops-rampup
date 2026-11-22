@@ -75,6 +75,8 @@ jobs:
         run: |
           npm ci
           npm test
+          # dev tools too (they run here); the 3 moderate ones inside mocha have no fix yet
+          npm audit --audit-level=high
       - if: matrix.app == 'movie-analyst-api'
         name: Schema and seeds load twice on a real MySQL
         working-directory: ${{ matrix.app }}

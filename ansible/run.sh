@@ -9,11 +9,12 @@ ENV=${1:?usage: ansible/run.sh qa|prod}
 ssh-add -l >/dev/null || { echo "load your key into ssh-agent first (ssh-add)"; exit 1; }
 
 BASTION=$(terraform -chdir=terraform output -raw bastion_public_ip)
-SSH="ssh -o StrictHostKeyChecking=accept-new"
+# ConnectTimeout: fail in seconds, not minutes, when admin_cidr no longer matches your IP.
+SSH="ssh -o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
 # Every deploy creates a new bastion that may reuse an old public IP: drop the stale key, trust the new one.
 ssh-keygen -R "$BASTION" >/dev/null 2>&1 || true
 
 $SSH ec2-user@"$BASTION" 'cloud-init status --wait >/dev/null'  # Ansible is installed by user_data
-rsync -az --delete -e "$SSH" --exclude node_modules --exclude test-results.xml \
+rsync -az --delete -e "$SSH" --exclude node_modules \
   ansible movie-analyst-api movie-analyst-ui ec2-user@"$BASTION":deploy/
 $SSH -A ec2-user@"$BASTION" "cd deploy/ansible && ansible-playbook -i inventory/$ENV.ini site.yml"
